@@ -82,28 +82,35 @@ public class UserController {
     //  Validation XML _____________________(mafhemtch)
     private final XmlValidatorService xmlValidatorService; // ← nouveau
 
-    // Nouveau endpoint : POST avec XML validé via XSD
+    // New endpoint: POST a user as XML, validated via XSD (default) or DTD.
+    // Use ?validation=dtd to validate against the DTD instead of the XSD.
     @PostMapping(
         value = "/xml",
         consumes = MediaType.APPLICATION_XML_VALUE,
         produces = MediaType.APPLICATION_XML_VALUE
     )
-    public ResponseEntity<?> createUserFromXml(@RequestBody String xmlBody) {
+    public ResponseEntity<?> createUserFromXml(
+            @RequestBody String xmlBody,
+            @RequestParam(name = "validation", defaultValue = "xsd") String validation) {
         try {
-            // 1. Valider le XML contre le XSD
-            xmlValidatorService.validate(xmlBody);
+            // 1. Validate the XML against the chosen schema
+            if ("dtd".equalsIgnoreCase(validation)) {
+                xmlValidatorService.validateWithDtd(xmlBody);
+            } else {
+                xmlValidatorService.validate(xmlBody);
+            }
 
-            // 2. Convertir le XML en objet User
+            // 2. Convert the XML into a User object
             com.fasterxml.jackson.dataformat.xml.XmlMapper xmlMapper =
                 new com.fasterxml.jackson.dataformat.xml.XmlMapper();
             User user = xmlMapper.readValue(xmlBody, User.class);
 
-            // 3. Sauvegarder et retourner
+            // 3. Save and return
             return ResponseEntity.status(HttpStatus.CREATED)
                                  .body(userService.createUser(user));
 
         } catch (SAXException e) {
-            // XML invalide selon le XSD
+            // XML invalid according to the schema (XSD/DTD)
             return ResponseEntity.badRequest()
                                  .body("XML invalide : " + e.getMessage());
         } catch (Exception e) {

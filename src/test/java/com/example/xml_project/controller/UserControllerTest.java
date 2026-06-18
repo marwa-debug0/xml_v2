@@ -1,38 +1,38 @@
-package com.example.xml_project.restapi.controller;
+package com.example.xml_project.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.example.xml_project.restapi.model.User;
-import com.example.xml_project.restapi.service.UserService;
-import com.example.xml_project.restapi.service.XmlValidatorService;
+import com.example.xml_project.model.User;
+import com.example.xml_project.service.UserService;
+import com.example.xml_project.service.XmlValidatorService;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.List;
 import java.util.Optional;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-// @WebMvcTest : charge uniquement la couche HTTP (pas la DB)
+// @WebMvcTest : loads only the HTTP layer (no DB)
 @WebMvcTest(UserController.class)
 class UserControllerTest {
 
     @Autowired
-    private MockMvc mockMvc; // simule les requêtes HTTP
+    private MockMvc mockMvc; // simulates HTTP requests
 
-    @MockBean
+    @MockitoBean
     private UserService userService;
 
-    @MockBean
+    @MockitoBean
     private XmlValidatorService xmlValidatorService;
 
-    @Autowired
-    private ObjectMapper objectMapper;
+    private final ObjectMapper objectMapper = new ObjectMapper();
 
     @Test
     void getAllUsers_shouldReturn200() throws Exception {
@@ -64,6 +64,17 @@ class UserControllerTest {
                 .content(objectMapper.writeValueAsString(user)))
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.id").value(1));
+    }
+
+    @Test
+    void createUser_shouldReturn400_whenInvalid() throws Exception {
+        // name is blank and email is invalid -> @Valid should reject
+        User invalid = new User(null, "", "not-an-email", "1234");
+
+        mockMvc.perform(post("/api/users")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(invalid)))
+                .andExpect(status().isBadRequest());
     }
 
     @Test
