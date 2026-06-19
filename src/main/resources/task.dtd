@@ -1,0 +1,5 @@
+<!ELEMENT task  (id?, title, completed, description?)>
+<!ELEMENT id          (#PCDATA)>
+<!ELEMENT title       (#PCDATA)>
+<!ELEMENT completed   (#PCDATA)>
+<!ELEMENT description (#PCDATA)>
